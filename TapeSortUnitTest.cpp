@@ -136,14 +136,11 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 3);
         sorter.sort();
-
         vector<int> result = read_tape_contents(*output_tape);
         vector<int> expected = {1, 2, 3, 4, 5};
         CHECK(result == expected);
-
         clean_up();
     }
 
