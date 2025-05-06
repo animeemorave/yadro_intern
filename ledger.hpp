@@ -19,8 +19,11 @@ struct Time {
     Time(int h = 0, int m = 0);
     explicit Time(const std::string& time_str);
     std::string to_string() const;
+    bool operator<(const Time& rhs)const;
+    bool operator==(const Time& rhs)const;
     Time& operator+=(const Time& rhs);
     friend Time operator-(const Time& lhs, const Time& rhs);
+
 };
 
 struct Table {

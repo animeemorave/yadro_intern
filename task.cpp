@@ -8,8 +8,15 @@
 #include <utility>
 #include "ledger.hpp"
 
-bool check(std::vector<std::string> &commands, int num_tables) {
-    const ledger::Time cur_time(commands[0]);
+void check(
+    std::vector<std::string> &commands,
+    int num_tables,
+    ledger::Time cur_time
+) {
+    const ledger::Time event_time(commands[0]);
+    if (event_time < cur_time) {
+        throw std::invalid_argument("");
+    }
     int command = stoi(commands[1]);
     if (command < 0 || command > 4) {
         throw std::invalid_argument("");
@@ -23,6 +30,7 @@ bool check(std::vector<std::string> &commands, int num_tables) {
 }
 
 int main(int argc, char *argv[]) {
+    // std::ifstream input("task_data/task_queue.txt");
     std::ifstream input(argv[1]);
     if (!input.is_open()) {
         return 1;
@@ -73,6 +81,7 @@ int main(int argc, char *argv[]) {
             {4, [&](std::vector<std::string> &args
                 ) { ledger.handle_departure(args); }}
         };
+    ledger::Time cur_time;
     while (getline(input, read_buffer)) {
         std::cout << read_buffer << "\n";
         std::vector<std::string> commands;
@@ -81,13 +90,13 @@ int main(int argc, char *argv[]) {
         while (ss >> command) {
             commands.push_back(command);
         }
-        // check(commands, num_tables);
-        int command_number = stoi(commands[1]);
         try {
-            function_table.at(command_number)(commands);
+            check(commands, num_tables, cur_time);
         } catch (std::invalid_argument &err) {
             return 0;
         }
+        int command_number = stoi(commands[1]);
+        function_table.at(command_number)(commands);
     }
     input.close();
     ledger.print_final_report();
