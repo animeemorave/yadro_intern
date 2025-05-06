@@ -30,7 +30,6 @@ void check(
 }
 
 int main(int argc, char *argv[]) {
-    // std::ifstream input("task_data/task_queue.txt");
     std::ifstream input(argv[1]);
     if (!input.is_open()) {
         return 1;
