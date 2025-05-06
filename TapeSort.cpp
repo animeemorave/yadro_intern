@@ -12,7 +12,7 @@ TapeSort::TapeSort(
 
 void TapeSort::sort() {
     std::string nullable_config = "null_config.txt";
-    std::string filename,mode = "write";
+    std::string filename, mode = "write";
     int num;
     int parts = 0;
     while (!input_tape.is_eof()) {
@@ -21,8 +21,7 @@ void TapeSort::sort() {
         part.push_back(num);
         if (part.size() == element_count) {
             std::sort(part.begin(), part.end());
-            filename =
-                "tmp/tmp_" + std::to_string(parts) + ".txt";
+            filename = "tmp/tmp_" + std::to_string(parts) + ".txt";
 
             TapeInterface *help_tape =
                 new TapeImplementation(filename, nullable_config, mode);
