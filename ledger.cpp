@@ -191,7 +191,7 @@ bool Ledger::validate_client_presence(
 
 bool Ledger::is_table_available(const Time &current_time, int table_number)
     const {
-    if (table_number < 1 || table_number >= tables.size()) {
+    if (table_number < 1 || (size_t)table_number >= tables.size()) {
         std::cout << current_time.to_string() << " 13 PlaceIsBusy\n";
         return true;
     }
