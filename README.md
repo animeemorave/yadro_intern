@@ -1,26 +1,7 @@
 # YADRO IMPULSE 2025 C++
 
-Тестовое задание для стажировки в рамках YADRO IMPULSE 2025 
+Тестовое задание для стажировки YADRO IMPULSE 2025 
 
-
-## Компиляция программы
-
-Для сборки программы используйте одну из следующих команд (в зависимости от компилятора):
-
-**GCC**:
-```bash
-g++ -g -O3 -Wall -Wextra -std=c++17 task.cpp ledger.cpp -o task
-```
-**Clang**:
-```bash
-clang++ -g -O3 -Wall -Wextra -std=c++17 task.cpp ledger.cpp -o task
-```
-## Запуск тестов
-Тестовые данные расположены в папке ./task_data. Для запуска тестов выполните:
-```bash
-bash ./run_test_data.sh
-```
-В случае отсутствия прав выполнить: 
-```bash
-chmod +x ./run_test_data.sh 
-```
+В этом репозитории лежит два тестовых задания. Найти их можно в следующих ветках:
+* YADRO IMPULSE 2025 C++. Базовые станции и СХД - [yadro_intern_task_3](https://github.com/animeemorave/yadro_intern/tree/task3)
+* YADRO IMPULSE 2025 C++. TATLIN.Unified - [TODO]
