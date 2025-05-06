@@ -1,0 +1,4 @@
+read_delay=0
+write_delay=0
+shift_delay=0
+to_start_delay=0
