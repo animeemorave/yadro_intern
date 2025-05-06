@@ -18,11 +18,6 @@ void create_tmp_dir() {
     system("mkdir -p tmp");
 }
 
-void clean_up() {
-    remove("null_config.txt");
-    system("rm -rf tmp");
-}
-
 vector<int> read_tape_contents(TapeInterface &tape) {
     vector<int> results;
     tape.to_start();
@@ -39,8 +34,11 @@ TEST_SUITE("TapeSort Tests") {
     TEST_CASE("Basic sorting") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "5 3 1 4 2";
+
+        {
+            ofstream input_file("input.txt");
+            input_file << "5 3 1 4 2";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -48,7 +46,6 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 5);
         sorter.sort();
 
@@ -56,14 +53,18 @@ TEST_SUITE("TapeSort Tests") {
         vector<int> expected = {1, 2, 3, 4, 5};
         CHECK(result == expected);
 
-        clean_up();
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("Multiple temporary tapes merge") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "9 7 5 3 1 8 6 4 2 0";
+
+        {
+            ofstream input_file("input.txt");
+            input_file << "9 7 5 3 1 8 6 4 2 0";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -71,21 +72,25 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 3);
         sorter.sort();
 
         vector<int> result = read_tape_contents(*output_tape);
         vector<int> expected = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         CHECK(result == expected);
-        clean_up();
+
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("Edge case: max_element=1") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "5 3 1 4 2";
+
+        {
+            ofstream input_file("input.txt");
+            input_file << "5 3 1 4 2";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -93,7 +98,6 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 1);
         sorter.sort();
 
@@ -101,12 +105,15 @@ TEST_SUITE("TapeSort Tests") {
         vector<int> expected = {1, 2, 3, 4, 5};
         CHECK(result == expected);
 
-        clean_up();
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("Empty input tape") {
         create_null_config();
         create_tmp_dir();
+
+        { ofstream input_file("input.txt"); }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -114,21 +121,24 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 5);
         sorter.sort();
 
         output_tape->to_start();
         CHECK(output_tape->is_eof());
 
-        clean_up();
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("Already sorted input") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "1 2 3 4 5";
+
+        {
+            ofstream input_file("input.txt");
+            input_file << "1 2 3 4 5";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -138,17 +148,23 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_out, config, mode_write);
         TapeSort sorter(*input_tape, *output_tape, 3);
         sorter.sort();
+
         vector<int> result = read_tape_contents(*output_tape);
         vector<int> expected = {1, 2, 3, 4, 5};
         CHECK(result == expected);
-        clean_up();
+
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("Reverse sorted input") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "5 4 3 2 1";
+
+        {
+            ofstream input_file("input.txt");
+            input_file << "5 4 3 2 1";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -156,7 +172,6 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 2);
         sorter.sort();
 
@@ -164,15 +179,18 @@ TEST_SUITE("TapeSort Tests") {
         vector<int> expected = {1, 2, 3, 4, 5};
         CHECK(result == expected);
 
-        clean_up();
+        delete input_tape;
+        delete output_tape;
     }
 
     TEST_CASE("All elements same") {
         create_null_config();
         create_tmp_dir();
-        ofstream input_file("input.txt");
-        input_file << "2 2 2 2 2";
 
+        {
+            ofstream input_file("input.txt");
+            input_file << "2 2 2 2 2";
+        }
         std::string filename_in = "input.txt", filename_out = "output.txt",
                     config = "null_config.txt", mode_write = "write",
                     mode_read = "read";
@@ -180,7 +198,6 @@ TEST_SUITE("TapeSort Tests") {
             new TapeImplementation(filename_in, config, mode_read);
         TapeInterface *output_tape =
             new TapeImplementation(filename_out, config, mode_write);
-
         TapeSort sorter(*input_tape, *output_tape, 3);
         sorter.sort();
 
@@ -188,6 +205,7 @@ TEST_SUITE("TapeSort Tests") {
         vector<int> expected = {2, 2, 2, 2, 2};
         CHECK(result == expected);
 
-        clean_up();
+        delete input_tape;
+        delete output_tape;
     }
 }

@@ -7,6 +7,7 @@
 Для сборки основной программы выполните:
 ```bash
 g++ -std=c++17 main.cpp TapeSort.cpp TapeImplementation.cpp -o sort
+./sort input_tape.txt output_tape.txt
 ```
 ## Запуск unit тестов
 Для запуска TapeImplUnitTest.cpp, соберите следующие файлы
