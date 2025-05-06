@@ -1,7 +1,21 @@
-# YADRO IMPULSE 2025 C++
+# YADRO IMPULSE 2025 C++.TATLIN.Unified
 
-Тестовое задание для стажировки YADRO IMPULSE 2025 
+Тестовое задание для стажировки, реализующее алгоритм сортировки данных на ленточном устройстве. 
+Проект демонстрирует работу с виртуальной лентой (Tape) и алгоритм внешней сортировки слиянием.
 
-В этом репозитории лежит два тестовых задания. Найти их можно в следующих ветках:
-* YADRO IMPULSE 2025 C++. Базовые станции и СХД - [yadro_intern_task_3](https://github.com/animeemorave/yadro_intern/tree/task3)
-* YADRO IMPULSE 2025 C++. TATLIN.Unified - [TODO]
+## Компиляция
+Для сборки основной программы выполните:
+```bash
+g++ -std=c++17 main.cpp TapeSort.cpp TapeImplementation.cpp -o sort
+```
+## Запуск unit тестов
+Для запуска TapeImplUnitTest.cpp, соберите следующие файлы
+```bash
+g++ -std=c++17 TapeImplUnitTest.cpp TapeImplementation.cpp doctest_main.cpp -o tape_tests
+./tape_tests
+``` 
+Для запуска TapeSortUnitTest.cpp, соберите следующие файлы
+```bash
+g++ -std=c++17 TapeSort.cpp TapeSortUnitTest.cpp doctest_main.cpp TapeImplementation.cpp -o sort_tests
+./sort_tests
+``` 

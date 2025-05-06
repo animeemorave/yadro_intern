@@ -17,12 +17,12 @@ TapeImplementation::TapeImplementation(
         tape.open(input_file, std::ios::in | std::ios::out);
     }
     if (!tape) {
-        throw std::invalid_argument("can`t open config_file");
+        throw std::invalid_argument("can`t open file");
     }
     file.exceptions(std::ios_base::failbit | std::ios_base::badbit);
     file.open(config_file);
     if (!file) {
-        throw std::invalid_argument("can`t open file");
+        throw std::invalid_argument("can`t open config_file");
     }
     TapeConfig config;
     std::string read_buffer;
