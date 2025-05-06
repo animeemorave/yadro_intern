@@ -1,5 +1,6 @@
-#define LEDGER_HPP_
-#ifdef LEDGER_HPP_
+#ifndef LEDGER_HPP
+#define LEDGER_HPP
+
 #include <algorithm>
 #include <iostream>
 #include <queue>
@@ -7,59 +8,55 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <stdexcept>
 
-namespace ledger_namespace {
-struct time {
-    int hour;
-    int minute;
+namespace ledger {
 
-    time(int h, int m);
-    time(std::string &string);
-    [[nodiscard]] std::string to_string() const;
-    time &operator+=(const time &other);
+struct Time {
+    int hours;
+    int minutes;
 
-    friend time operator-(const time &lhs, const time &rhs) {
-        time answer(0, 0);
-        answer.hour = lhs.hour - rhs.hour;
-        if (lhs.minute - rhs.minute < 0) {
-            answer.hour -= 1;
-        }
-        answer.minute = ((60 - rhs.minute) + lhs.minute) % 60;
-        return answer;
-    }
+    Time(int h = 0, int m = 0);
+    explicit Time(const std::string& time_str);
+    std::string to_string() const;
+    Time& operator+=(const Time& rhs);
+    friend Time operator-(const Time& lhs, const Time& rhs);
 };
 
-class ledger {
+struct Table {
+    bool occupied = false;
+    Time current_usage_start;
+    Time total_usage_time;
+    int revenue = 0;
+};
+
+class Ledger {
 public:
-    ledger(int sit_count, int hour_price, time start_time, time end_time);
-    void arrived(std::vector<std::string> &commands);
-    void sit(std::vector<std::string> &commands);
-    void wait(std::vector<std::string> &commands);
-    void left(std::vector<std::string> &commands);
-    void kick_out();
-    void earnings();
+    Ledger(int table_count, int hourly_rate, Time opening_time, Time closing_time);
+    void handle_arrival(const std::vector<std::string>& args);
+    void handle_seating(const std::vector<std::string>& args);
+    void handle_waiting(const std::vector<std::string>& args);
+    void handle_departure(const std::vector<std::string>& args);
+    void print_final_report();
 
 private:
-    void refresh_queue(time time, int freed_number);
-    bool check_time(time time) const;
-    bool client_contains(std::string &client_name) const;
-    bool check_client_contains(time time, std::string &client_name, bool flag)
-        const;
-    bool check_free_place(time time) const;
-    bool check_place(time time, int number) const;
-    void client_left(time time, std::string &client_name);
+    void process_queue(const Time& current_time, int freed_table);
+    bool is_within_working_hours(const Time& current_time) const;
+    bool validate_client_presence(const Time& current_time, const std::string& client, bool should_exist) const;
+    bool is_table_available(const Time& current_time, int table_number) const;
+    void remove_client(const Time& current_time, const std::string& client);
+    void update_table_usage(const Time& current_time, int table_number);
 
-    const int hour_price_;
-    const int sit_count_;
-    const time start_time_;
-    const time end_time_;
-    int busy_table;
-    std::unordered_map<std::string, int> clients_to_tables;
-    std::unordered_set<std::string> client_in_queue;
-    std::queue<std::string> queue;
-    std::vector<time> tables;
-    std::vector<time> table_timer;
-    std::vector<int> table_earn;
+    const int hourly_rate_;
+    const Time opening_time_;
+    const Time closing_time_;
+    int occupied_tables_count_;
+    std::unordered_map<std::string, int> client_table_map;
+    std::unordered_set<std::string> waiting_clients;
+    std::queue<std::string> client_queue;
+    std::vector<Table> tables;
 };
-}  // namespace ledger_namespace
-#endif  // LEDGER_HPP_
+
+} // namespace ledger
+
+#endif // LEDGER_HPP

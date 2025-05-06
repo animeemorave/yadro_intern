@@ -1,209 +1,263 @@
 #include "ledger.hpp"
-using namespace ledger_namespace;
 
-time::time(int h, int m) : hour(h), minute(m) {
+namespace ledger {
+
+Time::Time(int h, int m) : hours(h), minutes(m) {
+    if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
+        throw std::invalid_argument("Invalid time values");
+    }
 }
 
-time::time(std::string &string) {
-    hour = ((string[0] - '0') * 10 + (string[1] - '0'));
-    minute = ((string[3] - '0') * 10 + (string[4] - '0'));
+Time::Time(const std::string &time_str) {
+    if (time_str.size() != 5 || time_str[2] != ':' ||
+        sscanf(time_str.c_str(), "%d:%d", &hours, &minutes) != 2) {
+        throw std::invalid_argument("Invalid time format");
+    }
+    if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
+        throw std::invalid_argument("Invalid time values");
+    }
 }
 
-ledger_namespace::time &time::operator+=(const time &other) {
-    hour = (hour + other.hour + (minute + other.minute) / 60) % 24;
-    minute = (minute + other.minute) % 60;
+std::string Time::to_string() const {
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", hours, minutes);
+    return buffer;
+}
+
+Time &Time::operator+=(const Time &rhs) {
+    minutes += rhs.minutes;
+    hours += rhs.hours + minutes / 60;
+    minutes %= 60;
+    hours %= 24;
     return *this;
 }
 
-[[nodiscard]] std::string time::to_string() const {
-    const std::string hour_string =
-        hour < 10 ? "0" + std::to_string(hour) : std::to_string(hour);
-    const std::string minute_string =
-        minute < 10 ? "0" + std::to_string(minute) : std::to_string(minute);
-    return hour_string + ":" + minute_string;
+Time operator-(const Time &lhs, const Time &rhs) {
+    int total_minutes =
+        (lhs.hours * 60 + lhs.minutes) - (rhs.hours * 60 + rhs.minutes);
+    if (total_minutes < 0) {
+        total_minutes += 1440;
+    }
+    return {total_minutes / 60, total_minutes % 60};
 }
 
-ledger::ledger(int sit_count, int hour_price, time start_time, time end_time)
-    : sit_count_(sit_count),
-      hour_price_(hour_price),
-      start_time_(start_time),
-      end_time_(end_time),
-      busy_table(0),
-      tables(sit_count + 1, time(-1, -1)),
-      table_timer(sit_count + 1, time(0, 0)),
-      table_earn(sit_count + 1, 0) {
+Ledger::Ledger(
+    int table_count,
+    int hourly_rate,
+    Time opening_time,
+    Time closing_time
+)
+    : hourly_rate_(hourly_rate),
+      opening_time_(opening_time),
+      closing_time_(closing_time),
+      occupied_tables_count_(0),
+      tables(table_count + 1) {
 }
 
-void ledger::arrived(std::vector<std::string> &commands) {
-    const time cur_time(commands[0]);
-    std::string client_name = commands[2];
-    std::cout << cur_time.to_string() << " 1 " + client_name << "\n";
-    if (check_time(cur_time) ||
-        check_client_contains(cur_time, client_name, true)) {
+void Ledger::handle_arrival(const std::vector<std::string> &args) {
+    const Time current(args[0]);
+    const std::string &client = args[2];
+
+    if (!is_within_working_hours(current) ||
+        validate_client_presence(current, client, true)) {
         return;
     }
-    clients_to_tables[client_name] = 0;
+    client_table_map[client] = 0;
 }
 
-void ledger::sit(std::vector<std::string> &commands) {
-    const time cur_time(commands[0]);
-    std::string client_name = commands[2];
-    int number = std::stoi(commands[3]);
-    std::cout << cur_time.to_string() << " 2 " + client_name << " " << number
-              << "\n";
-    check_client_contains(cur_time, client_name, false);
-    if (!check_place(cur_time, number)) {
-        tables[number] = cur_time;
-        if (clients_to_tables[client_name] == 0) {
-            busy_table++;
-        }
-        time wasted_time = cur_time - tables[clients_to_tables[client_name]];
-        table_earn[clients_to_tables[client_name]] +=
-            hour_price_ * (wasted_time.hour + (wasted_time.minute > 0 ? 1 : 0));
-        table_timer[clients_to_tables[client_name]] += wasted_time;
-        tables[clients_to_tables[client_name]].hour = -1;
-        clients_to_tables[client_name] = number;
-    }
-}
+void Ledger::handle_seating(const std::vector<std::string> &args) {
+    const Time current(args[0]);
+    const std::string &client = args[2];
+    const int table_number = std::stoi(args[3]);
 
-void ledger::wait(std::vector<std::string> &commands) {
-    const time cur_time(commands[0]);
-    std::string client_name = commands[2];
-    std::cout << cur_time.to_string() << " 3 " + client_name << "\n";
-    if (check_free_place(cur_time)) {
+    if (validate_client_presence(current, client, false) ||
+        is_table_available(current, table_number)) {
         return;
     }
-    if (client_in_queue.size() >= sit_count_) {
-        client_left(cur_time, client_name);
-        return;
+
+    tables[table_number].current_usage_start = current;
+    tables[table_number].occupied = true;
+
+    if (client_table_map[client] == 0) {
+        occupied_tables_count_++;
     }
-    queue.push(client_name);
-    client_in_queue.emplace(client_name);
+
+    update_table_usage(current, client_table_map[client]);
+    client_table_map[client] = table_number;
 }
 
-void ledger::left(std::vector<std::string> &commands) {
-    const time cur_time(commands[0]);
-    std::string client_name = commands[2];
-    std::cout << cur_time.to_string() << " 4 " << client_name << "\n";
-    bool flag = check_client_contains(cur_time, client_name, false);
-    if (!flag && clients_to_tables[client_name] != 0) {
-        busy_table--;
-        time wasted_time = cur_time - tables[clients_to_tables[client_name]];
-        table_earn[clients_to_tables[client_name]] +=
-            hour_price_ * (wasted_time.hour + (wasted_time.minute > 0 ? 1 : 0));
-        table_timer[clients_to_tables[client_name]] += wasted_time;
-        tables[clients_to_tables[client_name]].hour = -1;
-        client_in_queue.erase(client_name);
-        refresh_queue(cur_time, clients_to_tables[client_name]);
-    }
-    if (!flag) {
-        client_in_queue.erase(client_name);
-        clients_to_tables.erase(client_name);
-    }
-}
-
-void ledger::kick_out() {
+void Ledger::print_final_report() {
     std::vector<std::string> clients;
-    for (auto x : clients_to_tables) {
-        clients.emplace_back(x.first);
+    for (const auto &entry : client_table_map) {
+        clients.push_back(entry.first);
     }
     std::sort(clients.begin(), clients.end());
-    for (auto client : clients) {
-        client_left(end_time_, client);
+
+    for (const auto &client : clients) {
+        remove_client(closing_time_, client);
+    }
+
+    std::cout << closing_time_.to_string() << "\n";
+    for (size_t i = 1; i < tables.size(); ++i) {
+        std::cout << i << " " << tables[i].revenue << " "
+                  << tables[i].total_usage_time.to_string() << "\n";
     }
 }
 
-void ledger_namespace::ledger::earnings() {
-    for (int i = 1; i <= sit_count_; i++) {
-        std::cout << i << " " << table_earn[i] << " "
-                  << table_timer[i].to_string() << "\n";
-    }
-}
+void Ledger::handle_waiting(const std::vector<std::string> &args) {
+    const Time current(args[0]);
+    const std::string &client = args[2];
 
-void ledger::refresh_queue(time cur_time, int freed_number) {
-    if (queue.empty()) {
+    if (validate_client_presence(current, client, false)) {
         return;
     }
-    std::string client_name = queue.front();
-    queue.pop();
-    while (client_in_queue.find(client_name) != client_in_queue.end() &&
-           !queue.empty()) {
-        client_name = queue.front();
-        queue.pop();
+
+    const size_t free_tables = tables.size() - 1 - occupied_tables_count_;
+    if (free_tables > 0) {
+        std::cout << current.to_string() << " 13 ICanWaitNoLonger!\n";
+        return;
     }
-    busy_table++;
-    clients_to_tables[client_name] = freed_number;
-    tables[freed_number] = cur_time;
-    std::cout << cur_time.to_string() << " 12 " << client_name << " "
-              << freed_number << "\n";
+
+    if (client_queue.size() >= tables.size() - 1) {
+        remove_client(current, client);
+        return;
+    }
+
+    client_queue.push(client);
+    waiting_clients.insert(client);
 }
 
-bool ledger::check_time(time cur_time) const {
-    if ((cur_time.hour < start_time_.hour || cur_time.hour > end_time_.hour) ||
-        (cur_time.hour == start_time_.hour &&
-         cur_time.minute < start_time_.minute) ||
-        (cur_time.hour == end_time_.hour && cur_time.minute > end_time_.minute
-        )) {
-        std::cout << cur_time.to_string() << " 13 NotOpenYet\n";
-        return true;
+void Ledger::handle_departure(const std::vector<std::string> &args) {
+    const Time current(args[0]);
+    const std::string &client = args[2];
+
+    if (validate_client_presence(current, client, false)) {
+        return;
     }
-    return false;
+
+    const int table_number = client_table_map[client];
+    if (table_number != 0) {
+        occupied_tables_count_--;
+        update_table_usage(current, table_number);
+        process_queue(current, table_number);
+    }
+
+    waiting_clients.erase(client);
+    client_table_map.erase(client);
 }
 
-bool ledger::client_contains(std::string &client_name) const {
-    bool is_contains = true;
-    try {
-        clients_to_tables.at(client_name);
-    } catch (...) {
-        is_contains = false;
+void Ledger::process_queue(const Time &current_time, int freed_table) {
+    if (client_queue.empty()) {
+        return;
     }
-    return is_contains;
+
+    std::string next_client;
+    do {
+        next_client = client_queue.front();
+        client_queue.pop();
+    } while (!client_queue.empty() && !waiting_clients.contains(next_client));
+
+    if (!waiting_clients.contains(next_client)) {
+        return;
+    }
+
+    occupied_tables_count_++;
+    client_table_map[next_client] = freed_table;
+    tables[freed_table].current_usage_start = current_time;
+    tables[freed_table].occupied = true;
+    waiting_clients.erase(next_client);
+
+    std::cout << current_time.to_string() << " 12 " << next_client << " "
+              << freed_table << "\n";
 }
 
-bool ledger::check_client_contains(
-    time cur_time,
-    std::string &client_name,
-    bool flag
+bool Ledger::is_within_working_hours(const Time &current_time) const {
+    if (current_time.hours < opening_time_.hours ||
+        (current_time.hours == opening_time_.hours &&
+         current_time.minutes < opening_time_.minutes)) {
+        std::cout << current_time.to_string() << " 13 NotOpenYet\n";
+        return false;
+    }
+
+    if (current_time.hours > closing_time_.hours ||
+        (current_time.hours == closing_time_.hours &&
+         current_time.minutes > closing_time_.minutes)) {
+        std::cout << current_time.to_string() << " 13 NotOpenYet\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool Ledger::validate_client_presence(
+    const Time &current_time,
+    const std::string &client,
+    bool should_exist
 ) const {
-    bool is_contains = client_contains(client_name);
-    if (!is_contains && !flag) {
-        std::cout << cur_time.to_string() << " 13 ClientUnknown\n";
+    const bool exists = client_table_map.count(client) > 0;
+
+    if (should_exist && exists) {
+        std::cout << current_time.to_string() << " 13 YouShallNotPass\n";
         return true;
     }
-    if (is_contains && flag) {
-        std::cout << cur_time.to_string() << " 13 YouShallNotPass\n";
+
+    if (!should_exist && !exists) {
+        std::cout << current_time.to_string() << " 13 ClientUnknown\n";
         return true;
     }
+
     return false;
 }
 
-bool ledger::check_free_place(time cur_time) const {
-    if (sit_count_ - busy_table > 0) {
-        std::cout << cur_time.to_string() << " 13 ICanWaitNoLonger!\n";
+bool Ledger::is_table_available(const Time &current_time, int table_number)
+    const {
+    if (table_number < 1 || table_number >= tables.size()) {
+        std::cout << current_time.to_string() << " 13 PlaceIsBusy\n";
         return true;
     }
+
+    if (tables[table_number].occupied) {
+        std::cout << current_time.to_string() << " 13 PlaceIsBusy\n";
+        return true;
+    }
+
     return false;
 }
 
-bool ledger::check_place(time cur_time, int number) const {
-    if (tables[number].hour != -1) {
-        std::cout << cur_time.to_string() << " 13 PlaceIsBusy\n";
-        return true;
+void Ledger::remove_client(
+    const Time &current_time,
+    const std::string &client
+) {
+    if (validate_client_presence(current_time, client, false)) {
+        return;
     }
-    return false;
+
+    const int table_number = client_table_map[client];
+    if (table_number != 0) {
+        occupied_tables_count_--;
+        update_table_usage(current_time, table_number);
+    }
+
+    waiting_clients.erase(client);
+    client_table_map.erase(client);
+    std::cout << current_time.to_string() << " 11 " << client << "\n";
 }
 
-void ledger::client_left(time cur_time, std::string &client_name) {
-    bool flag = check_client_contains(cur_time, client_name, false);
-    if (!flag && clients_to_tables[client_name] != 0) {
-        busy_table--;
-        time wasted_time = cur_time - tables[clients_to_tables[client_name]];
-        table_earn[clients_to_tables[client_name]] +=
-            hour_price_ * (wasted_time.hour + (wasted_time.minute > 0 ? 1 : 0));
-        table_timer[clients_to_tables[client_name]] += wasted_time;
-        tables[clients_to_tables[client_name]].hour = -1;
+void Ledger::update_table_usage(const Time &current_time, int table_number) {
+    if (table_number == 0) {
+        return;
     }
-    client_in_queue.erase(client_name);
-    clients_to_tables.erase(client_name);
-    std::cout << cur_time.to_string() << " 11 " << client_name << "\n";
+
+    Table &table = tables[table_number];
+    const Time duration = current_time - table.current_usage_start;
+    table.total_usage_time += duration;
+
+    const int total_minutes = duration.hours * 60 + duration.minutes;
+    const int hours = (total_minutes + 59) / 60;
+    table.revenue += hours * hourly_rate_;
+
+    table.occupied = false;
+    table.current_usage_start = Time(0, 0);
 }
+
+}  // namespace ledger

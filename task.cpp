@@ -4,43 +4,92 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 #include "ledger.hpp"
 
+bool check(std::vector<std::string> &commands, int num_tables) {
+    const ledger::Time cur_time(commands[0]);
+    int command = stoi(commands[1]);
+    if (command < 0 || command > 4) {
+        throw std::invalid_argument("");
+    }
+    if (commands.size() == 4) {
+        int table_number = stoi(commands[3]);
+        if (table_number < 0 || table_number > num_tables) {
+            throw std::invalid_argument("");
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     std::ifstream input(argv[1]);
+    if (!input.is_open()) {
+        return 1;
+    }
     std::string read_buffer;
-    int sit_count = 0, price = 0;
-    input >> sit_count;
-    input >> read_buffer;
-    std::cout << read_buffer << "\n";
-    const ledger_namespace::time start_time(read_buffer);
-    input >> read_buffer;
-    const ledger_namespace::time end_time(read_buffer);
-    input >> price;
+    int num_tables = 0, price = 0;
     getline(input, read_buffer);
-    ledger_namespace::ledger ledger(sit_count, price, start_time, end_time);
+    try {
+        num_tables = stoi(read_buffer);
+    } catch (...) {
+        std::cout << read_buffer << "\n";
+        return 0;
+    }
+    ledger::Time start_time, end_time;
+    try {
+        getline(input, read_buffer);
+        std::stringstream ss(read_buffer);
+        std::string open_str, close_str;
+        ss >> open_str >> close_str;
+        start_time = std::move(ledger::Time(open_str));
+        end_time = std::move(ledger::Time(close_str));
+        if (start_time.hours > end_time.hours ||
+            (start_time.hours == end_time.hours &&
+             start_time.minutes > end_time.minutes)) {
+            throw std::invalid_argument("");
+        }
+    } catch (std::invalid_argument &err) {
+        std::cout << read_buffer << "\n";
+        return 0;
+    }
+    std::cout << start_time.to_string() << "\n";
+    getline(input, read_buffer);
+    try {
+        price = stoi(read_buffer);
+    } catch (...) {
+        std::cout << read_buffer << "\n";
+        return 0;
+    }
+    ledger::Ledger ledger(num_tables, price, start_time, end_time);
     static const std::map<int, std::function<void(std::vector<std::string> &)>>
         function_table = {
-            {1, [&](std::vector<std::string> &args) { ledger.arrived(args); }},
-            {2, [&](std::vector<std::string> &args) { ledger.sit(args); }},
-            {3, [&](std::vector<std::string> &args) { ledger.wait(args); }},
-            {4, [&](std::vector<std::string> &args) { ledger.left(args); }}
+            {1, [&](std::vector<std::string> &args
+                ) { ledger.handle_arrival(args); }},
+            {2, [&](std::vector<std::string> &args
+                ) { ledger.handle_seating(args); }},
+            {3, [&](std::vector<std::string> &args
+                ) { ledger.handle_waiting(args); }},
+            {4, [&](std::vector<std::string> &args
+                ) { ledger.handle_departure(args); }}
         };
     while (getline(input, read_buffer)) {
+        std::cout << read_buffer << "\n";
         std::vector<std::string> commands;
         std::stringstream ss(read_buffer);
         std::string command;
-
         while (ss >> command) {
             commands.push_back(command);
         }
+        // check(commands, num_tables);
         int command_number = stoi(commands[1]);
-        function_table.at(command_number)(commands);
+        try {
+            function_table.at(command_number)(commands);
+        } catch (std::invalid_argument &err) {
+            return 0;
+        }
     }
     input.close();
-    ledger.kick_out();
-    std::cout << end_time.to_string() << std::endl;
-    ledger.earnings();
+    ledger.print_final_report();
     return 0;
 }
