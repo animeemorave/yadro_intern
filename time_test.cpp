@@ -16,7 +16,7 @@ TEST_CASE("Time test") {
     SUBCASE("Invalid time parsing") {
         CHECK_THROWS(ledger::Time("24:00"));
         CHECK_THROWS(ledger::Time("12:60"));
-        CHECK_THROWS(ledger::Time("abc"));
+        CHECK_THROWS(ledger::Time("ab:ec"));
         CHECK_THROWS(ledger::Time("9:14"));
         CHECK_THROWS(ledger::Time("09:4"));
         CHECK_THROWS(ledger::Time("009:4"));
