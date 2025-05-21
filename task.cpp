@@ -35,13 +35,13 @@ void check(
         throw std::invalid_argument("");
     }
     switch (command) {
-        case 2:
+        case 2: {
             const int table_number = stoi(commands[3]);
             if (commands.size() != 4 || table_number < 0 ||
                 table_number > num_tables) {
                 throw std::invalid_argument("");
             }
-            break;
+        } break;
         default:
             if (commands.size() != 3) {
                 throw std::invalid_argument("");

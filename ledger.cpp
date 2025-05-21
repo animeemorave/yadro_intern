@@ -100,7 +100,7 @@ void Ledger::handle_seating(const std::vector<std::string> &args) {
 
 void Ledger::print_final_report() {
     std::vector<std::string> clients;
-    clients.resize(client_table_map.size());
+    clients.reserve(client_table_map.size());
     for (const auto &entry : client_table_map) {
         clients.push_back(entry.first);
     }
