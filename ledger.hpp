@@ -1,10 +1,7 @@
 #ifndef LEDGER_HPP
 #define LEDGER_HPP
 
-#include <algorithm>
-#include <iostream>
 #include <queue>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -13,12 +10,14 @@
 namespace ledger {
 
 struct Time {
+    // NOLINTNEXTLINE [misc-non-private-member-variables-in-classes]
     int hours;
+    // NOLINTNEXTLINE [misc-non-private-member-variables-in-classes]
     int minutes;
 
     Time(int h = 0, int m = 0);
     explicit Time(const std::string &time_str);
-    std::string to_string() const;
+    [[nodiscard]] std::string to_string() const;
     bool operator<(const Time &rhs) const;
     bool operator==(const Time &rhs) const;
     Time &operator+=(const Time &rhs);
@@ -58,9 +57,9 @@ private:
     void remove_client(const Time &current_time, const std::string &client);
     void update_table_usage(const Time &current_time, int table_number);
 
-    const int hourly_rate_;
-    const Time opening_time_;
-    const Time closing_time_;
+    int hourly_rate_;
+    Time opening_time_;
+    Time closing_time_;
     int occupied_tables_count_;
     std::unordered_map<std::string, int> client_table_map;
     std::unordered_set<std::string> waiting_clients;

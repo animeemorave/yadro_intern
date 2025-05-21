@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <functional>
@@ -5,22 +6,20 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
-#include <utility>
+#include <string>
+#include <vector>
 #include "ledger.hpp"
 
-bool check_valid_name(std::string name) {
-    for (char ch : name) {
-        if (!((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'))) {
-            return false;
-        }
-    }
-    return true;
+bool check_valid_name(const std::string &name) {
+    return std::all_of(name.begin(), name.end(), [&](char ch) {
+        return ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'));
+    });
 }
 
 void check(
     std::vector<std::string> &commands,
     int num_tables,
-    ledger::Time cur_time
+    ledger::Time &cur_time
 ) {
     if (commands.size() < 3) {
         throw std::invalid_argument("");
@@ -29,8 +28,9 @@ void check(
     if (event_time < cur_time) {
         throw std::invalid_argument("");
     }
-    int command = stoi(commands[1]);
-    std::string name = commands[2];
+    cur_time = event_time;
+    const int command = stoi(commands[1]);
+    const std::string name = commands[2];
     if ((command < 0 || command > 4) || !check_valid_name(name)) {
         throw std::invalid_argument("");
     }
@@ -44,7 +44,7 @@ void check(
         }
     }
     if (commands.size() == 4) {
-        int table_number = stoi(commands[3]);
+        const int table_number = stoi(commands[3]);
         if (table_number < 0 || table_number > num_tables) {
             throw std::invalid_argument("");
         }
@@ -52,12 +52,16 @@ void check(
 }
 
 int main([[maybe_unused]] int argc, char *argv[]) {
+    assert(argc == 2);
+    // NOLINTNEXTLINE [cppcoreguidelines-pro-bounds-pointer-arithmetic]
     std::ifstream input(argv[1]);
+    input.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     if (!input.is_open()) {
         return 1;
     }
     std::string read_buffer;
-    int num_tables = 0, price = 0;
+    int num_tables = 0;
+    int price = 0;
     getline(input, read_buffer);
     try {
         num_tables = stoi(read_buffer);
@@ -68,14 +72,16 @@ int main([[maybe_unused]] int argc, char *argv[]) {
         std::cout << read_buffer << "\n";
         return 0;
     }
-    ledger::Time start_time, end_time;
+    ledger::Time start_time;
+    ledger::Time end_time;
     try {
         getline(input, read_buffer);
         std::stringstream ss(read_buffer);
-        std::string open_str, close_str;
+        std::string open_str;
+        std::string close_str;
         ss >> open_str >> close_str;
-        start_time = std::move(ledger::Time(open_str));
-        end_time = std::move(ledger::Time(close_str));
+        start_time = ledger::Time(open_str);
+        end_time = ledger::Time(close_str);
         if (start_time.hours > end_time.hours ||
             (start_time.hours == end_time.hours &&
              start_time.minutes > end_time.minutes)) {
@@ -109,7 +115,8 @@ int main([[maybe_unused]] int argc, char *argv[]) {
                 ) { ledger.handle_departure(args); }}
         };
     ledger::Time cur_time;
-    while (getline(input, read_buffer)) {
+    while (!input.eof()) {
+        getline(input, read_buffer);
         std::cout << read_buffer << "\n";
         std::vector<std::string> commands;
         std::stringstream ss(read_buffer);
@@ -119,7 +126,7 @@ int main([[maybe_unused]] int argc, char *argv[]) {
         }
         try {
             check(commands, num_tables, cur_time);
-            int command_number = stoi(commands[1]);
+            const int command_number = stoi(commands[1]);
             function_table.at(command_number)(commands);
         } catch (...) {
             return 0;

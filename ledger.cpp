@@ -1,4 +1,10 @@
 #include "ledger.hpp"
+#include <algorithm>
+#include <cstdio>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace ledger {
 
@@ -8,6 +14,7 @@ Time::Time(int h, int m) : hours(h), minutes(m) {
     }
 }
 
+// NOLINTBEGIN [cppcoreguidelines-pro-type-vararg]
 Time::Time(const std::string &time_str) {
     if (time_str.size() != 5 || time_str[2] != ':' ||
         sscanf(time_str.c_str(), "%d:%d", &hours, &minutes) != 2) {
@@ -23,6 +30,8 @@ std::string Time::to_string() const {
     snprintf(buffer, sizeof(buffer), "%02d:%02d", hours, minutes);
     return buffer;
 }
+
+// NOLINTEND [cppcoreguidelines-pro-type-vararg]
 
 bool Time::operator==(const Time &rhs) const {
     return hours == rhs.hours && minutes == rhs.minutes;
@@ -91,6 +100,7 @@ void Ledger::handle_seating(const std::vector<std::string> &args) {
 
 void Ledger::print_final_report() {
     std::vector<std::string> clients;
+    clients.resize(client_table_map.size());
     for (const auto &entry : client_table_map) {
         clients.push_back(entry.first);
     }
@@ -144,12 +154,13 @@ void Ledger::process_queue(const Time &current_time, int freed_table) {
     if (client_queue.empty()) {
         return;
     }
-    std::string next_client;
-    do {
+    std::string next_client = client_queue.front();
+    client_queue.pop();
+    while (!client_queue.empty() &&
+           waiting_clients.find(next_client) == waiting_clients.end()) {
         next_client = client_queue.front();
         client_queue.pop();
-    } while (!client_queue.empty() &&
-             waiting_clients.find(next_client) == waiting_clients.end());
+    }
 
     if (waiting_clients.find(next_client) == waiting_clients.end()) {
         return;
@@ -191,7 +202,8 @@ bool Ledger::validate_client_presence(
 
 bool Ledger::is_table_available(const Time &current_time, int table_number)
     const {
-    if (table_number < 1 || (size_t)table_number >= tables.size()) {
+    if (table_number < 1 ||
+        static_cast<size_t>(table_number) >= tables.size()) {
         std::cout << current_time.to_string() << " 13 PlaceIsBusy\n";
         return true;
     }
