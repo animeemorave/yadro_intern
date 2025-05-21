@@ -4,17 +4,17 @@ namespace ledger {
 
 Time::Time(int h, int m) : hours(h), minutes(m) {
     if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
-        throw std::invalid_argument("Invalid time values");
+        throw std::invalid_argument("");
     }
 }
 
 Time::Time(const std::string &time_str) {
     if (time_str.size() != 5 || time_str[2] != ':' ||
         sscanf(time_str.c_str(), "%d:%d", &hours, &minutes) != 2) {
-        throw std::invalid_argument("Invalid time format");
+        throw std::invalid_argument("");
     }
     if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
-        throw std::invalid_argument("Invalid time values");
+        throw std::invalid_argument("");
     }
 }
 
