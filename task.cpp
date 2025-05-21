@@ -22,6 +22,9 @@ void check(
     int num_tables,
     ledger::Time cur_time
 ) {
+    if (commands.size() < 3) {
+        throw std::invalid_argument("");
+    }
     const ledger::Time event_time(commands[0]);
     if (event_time < cur_time) {
         throw std::invalid_argument("");
@@ -31,21 +34,14 @@ void check(
     if ((command < 0 || command > 4) || !check_valid_name(name)) {
         throw std::invalid_argument("");
     }
-    switch (command) {
-        case 1:
-        case 3:
-        case 4:
-            if (commands.size() != 3) {
-                throw std::invalid_argument("");
-            }
-            break;
-        case 2:
-            if (commands.size() != 4) {
-                throw std::invalid_argument("");
-            }
-            break;
-        default:
+    if (command == 2) {
+        if (commands.size() != 4) {
             throw std::invalid_argument("");
+        }
+    } else {
+        if (commands.size() != 3) {
+            throw std::invalid_argument("");
+        }
     }
     if (commands.size() == 4) {
         int table_number = stoi(commands[3]);
@@ -123,11 +119,11 @@ int main([[maybe_unused]] int argc, char *argv[]) {
         }
         try {
             check(commands, num_tables, cur_time);
-        } catch (std::invalid_argument &err) {
+            int command_number = stoi(commands[1]);
+            function_table.at(command_number)(commands);
+        } catch (...) {
             return 0;
         }
-        int command_number = stoi(commands[1]);
-        function_table.at(command_number)(commands);
     }
     input.close();
     ledger.print_final_report();
