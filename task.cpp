@@ -8,6 +8,15 @@
 #include <utility>
 #include "ledger.hpp"
 
+bool check_valid_name(std::string name) {
+    for (char ch : name) {
+        if (!((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void check(
     std::vector<std::string> &commands,
     int num_tables,
@@ -18,8 +27,25 @@ void check(
         throw std::invalid_argument("");
     }
     int command = stoi(commands[1]);
-    if (command < 0 || command > 4) {
+    std::string name = commands[2];
+    if ((command < 0 || command > 4) || !check_valid_name(name)) {
         throw std::invalid_argument("");
+    }
+    switch (command) {
+        case 1:
+        case 3:
+        case 4:
+            if (commands.size() != 3) {
+                throw std::invalid_argument("");
+            }
+            break;
+        case 2:
+            if (commands.size() != 4) {
+                throw std::invalid_argument("");
+            }
+            break;
+        default:
+            throw std::invalid_argument("");
     }
     if (commands.size() == 4) {
         int table_number = stoi(commands[3]);
@@ -39,6 +65,9 @@ int main([[maybe_unused]] int argc, char *argv[]) {
     getline(input, read_buffer);
     try {
         num_tables = stoi(read_buffer);
+        if (num_tables <= 0) {
+            throw std::invalid_argument("");
+        }
     } catch (...) {
         std::cout << read_buffer << "\n";
         return 0;
@@ -64,6 +93,9 @@ int main([[maybe_unused]] int argc, char *argv[]) {
     getline(input, read_buffer);
     try {
         price = stoi(read_buffer);
+        if (price <= 0) {
+            throw std::invalid_argument("");
+        }
     } catch (...) {
         std::cout << read_buffer << "\n";
         return 0;

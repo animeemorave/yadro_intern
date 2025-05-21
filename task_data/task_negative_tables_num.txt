@@ -1,6 +1,8 @@
-10:00
+-2
+10:00 18:00
+25
 10:00 1 clientg
-10:00 1 clientp
+10:00 1 client-13
 10:00 1 clienth
 10:00 1 clienti
 10:00 1 clientj
@@ -12,11 +14,3 @@
 10:05 4 clienti
 10:05 3 clientj
 10:05 3 clienty
-10:05 11 clienty
-18:00 11 clientg
-18:00 11 clienth
-18:00 11 clientj
-18:00 11 clientp
-18:00
-1 200 07:55
-2 200 07:55
