@@ -34,20 +34,18 @@ void check(
     if ((command < 0 || command > 4) || !check_valid_name(name)) {
         throw std::invalid_argument("");
     }
-    if (command == 2) {
-        if (commands.size() != 4) {
-            throw std::invalid_argument("");
-        }
-    } else {
-        if (commands.size() != 3) {
-            throw std::invalid_argument("");
-        }
-    }
-    if (commands.size() == 4) {
-        const int table_number = stoi(commands[3]);
-        if (table_number < 0 || table_number > num_tables) {
-            throw std::invalid_argument("");
-        }
+    switch (command) {
+        case 2:
+            const int table_number = stoi(commands[3]);
+            if (commands.size() != 4 || table_number < 0 ||
+                table_number > num_tables) {
+                throw std::invalid_argument("");
+            }
+            break;
+        default:
+            if (commands.size() != 3) {
+                throw std::invalid_argument("");
+            }
     }
 }
 
