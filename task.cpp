@@ -12,7 +12,10 @@
 
 bool check_valid_name(const std::string &name) {
     return std::all_of(name.begin(), name.end(), [&](char ch) {
-        return ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9'));
+        return (
+            (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' ||
+            ch == '_'
+        );
     });
 }
 
@@ -37,7 +40,7 @@ void check(
     switch (command) {
         case 2: {
             const int table_number = stoi(commands[3]);
-            if (commands.size() != 4 || table_number < 0 ||
+            if (commands.size() != 4 || table_number <= 0 ||
                 table_number > num_tables) {
                 throw std::invalid_argument("");
             }
@@ -85,7 +88,7 @@ int main([[maybe_unused]] int argc, char *argv[]) {
              start_time.minutes > end_time.minutes)) {
             throw std::invalid_argument("");
         }
-    } catch (std::invalid_argument &err) {
+    } catch (...) {
         std::cout << read_buffer << "\n";
         return 0;
     }
