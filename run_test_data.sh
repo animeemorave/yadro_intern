@@ -1,6 +1,6 @@
 #!/bin/bash
 TEST_DIR="./task_data"
-clang-format -i task.cpp ledger.cpp
+clang-format -i task.cpp ledger.cpp ledger.hpp
 g++ -std=c++20  task.cpp ledger.cpp -o task
 for test_file in "$TEST_DIR"/*.txt; do
     base_name="${test_file%.txt}"

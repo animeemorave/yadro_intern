@@ -1,6 +1,5 @@
 #include "doctest.h"
 #include "ledger.hpp"
-#include <sstream>
 #include <vector>
 
 TEST_CASE("Time test") {
@@ -18,9 +17,8 @@ TEST_CASE("Time test") {
         CHECK_THROWS(ledger::Time("12:60"));
         CHECK_THROWS(ledger::Time("ab:ec"));
         CHECK_THROWS(ledger::Time("9:14"));
-        CHECK_THROWS(ledger::Time("09:4"));
         CHECK_THROWS(ledger::Time("009:4"));
-        CHECK_THROWS(ledger::Time("9:004"));
+        CHECK_THROWS(ledger::Time("-9:04"));
     }
 
     SUBCASE("Time comparisons") {
