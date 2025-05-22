@@ -121,7 +121,7 @@ void Ledger::handle_waiting(const std::vector<std::string> &args) {
     if (validate_client_presence(current, client, false)) {
         return;
     }
-    if (occupied_tables_count_ < tables.size() - 1) {
+    if (static_cast<size_t>(occupied_tables_count_) < tables.size() - 1) {
         std::cout << current.to_string() << " 13 ICanWaitNoLonger!\n";
         return;
     }

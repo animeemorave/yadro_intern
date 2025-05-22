@@ -20,12 +20,12 @@ bool check_valid_name(const std::string &name) {
 }
 
 void check_space(const std::string &str) {
-    if (isspace(str.front()) || isspace(str.back())) {
+    if (str.front() == ' ' || str.back() == ' ') {
         throw std::invalid_argument("");
     }
     bool prev_space = false;
-    for (char c : str) {
-        if (isspace(c)) {
+    for (const char c : str) {
+        if (c == ' ') {
             if (prev_space) {
                 throw std::invalid_argument("");
             };
