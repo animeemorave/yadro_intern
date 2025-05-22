@@ -9,11 +9,11 @@
 
 **GCC**:
 ```bash
-g++ -g -O3 -Wall -Wextra -std=c++17 task.cpp ledger.cpp -o task
+g++ -g -O3 -Wall -Wextra -std=c++20 task.cpp ledger.cpp -o task
 ```
 **Clang**:
 ```bash
-clang++ -g -O3 -Wall -Wextra -std=c++17 task.cpp ledger.cpp -o task
+clang++ -g -O3 -Wall -Wextra -std=c++20 task.cpp ledger.cpp -o task
 ```
 ## Запуск тестов
 Тестовые данные расположены в папке ./task_data. Для запуска тестов выполните:
@@ -23,4 +23,9 @@ bash ./run_test_data.sh
 В случае отсутствия прав выполнить: 
 ```bash
 chmod +x ./run_test_data.sh 
+```
+Для запуска unit-тестов для проверки ledger::Time:
+```c++
+g++ time_test.cpp doctest_main.cpp ledger.cpp -o test
+./test
 ```

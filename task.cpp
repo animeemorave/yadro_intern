@@ -19,6 +19,23 @@ bool check_valid_name(const std::string &name) {
     });
 }
 
+void check_space(const std::string &str) {
+    if (isspace(str.front()) || isspace(str.back())) {
+        throw std::invalid_argument("");
+    }
+    bool prev_space = false;
+    for (char c : str) {
+        if (isspace(c)) {
+            if (prev_space) {
+                throw std::invalid_argument("");
+            };
+            prev_space = true;
+        } else {
+            prev_space = false;
+        }
+    }
+}
+
 void check(
     std::vector<std::string> &commands,
     int num_tables,
@@ -77,15 +94,14 @@ int main([[maybe_unused]] int argc, char *argv[]) {
     ledger::Time end_time;
     try {
         getline(input, read_buffer);
+        check_space(read_buffer);
         std::stringstream ss(read_buffer);
         std::string open_str;
         std::string close_str;
         ss >> open_str >> close_str;
         start_time = ledger::Time(open_str);
         end_time = ledger::Time(close_str);
-        if (start_time.hours > end_time.hours ||
-            (start_time.hours == end_time.hours &&
-             start_time.minutes > end_time.minutes)) {
+        if (!(start_time < end_time)) {
             throw std::invalid_argument("");
         }
     } catch (...) {
@@ -126,6 +142,7 @@ int main([[maybe_unused]] int argc, char *argv[]) {
             commands.push_back(command);
         }
         try {
+            check_space(read_buffer);
             check(commands, num_tables, cur_time);
             const int command_number = stoi(commands[1]);
             function_table.at(command_number)(commands);
